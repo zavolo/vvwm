@@ -57,25 +57,26 @@ namespace VlessVPN
                         SocketProtectionLevel.PlainSocket).AsTask().GetAwaiter().GetResult();
                 }
 
-                var assignedIp = new VpnRoute(new HostName("10.233.233.2"), 32);
                 var routeScope = new VpnRouteAssignment();
                 routeScope.Ipv4InclusionRoutes.Add(new VpnRoute(new HostName("0.0.0.0"), 0));
                 routeScope.ExcludeLocalSubnets = true;
 
-                var dnsServers = new[] { new HostName("1.1.1.1"), new HostName("8.8.8.8") };
-
-                channel.StartExistingTransports(
-                    new[] { transport },
-                    new[] { transport },
-                    null,
-                    routeScope,
-                    null,
-                    1400,
-                    1500,
-                    false
-                );
+                var assignedIps = new VpnDomainNameAssignment();
 
                 channel.AssociateTransport(transport, null);
+
+                var localAddress = new HostName("10.233.233.2");
+                channel.StartWithMainTransport(
+                    new[] { localAddress },
+                    null,
+                    null,
+                    routeScope,
+                    assignedIps,
+                    1400,
+                    1500,
+                    false,
+                    transport
+                );
 
                 Log?.Invoke($"Connected to {_config.Address}:{_config.Port}");
             }

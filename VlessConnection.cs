@@ -8,6 +8,8 @@ using Windows.Networking.Sockets;
 using Windows.Security.Cryptography.Certificates;
 using Windows.Storage.Streams;
 
+using SystemBuffer = System.Buffer;
+
 namespace VlessVPN
 {
     public class VlessConnection : IDisposable
@@ -87,7 +89,7 @@ namespace VlessVPN
                 int read = (int)Math.Min(loaded, (uint)maxCount);
                 byte[] temp = new byte[read];
                 _reader.ReadBytes(temp);
-                Buffer.BlockCopy(temp, 0, buffer, offset, read);
+                SystemBuffer.BlockCopy(temp, 0, buffer, offset, read);
                 return read;
             }
 
@@ -113,7 +115,7 @@ namespace VlessVPN
             {
                 byte[] temp = new byte[toRead];
                 _reader.ReadBytes(temp);
-                Buffer.BlockCopy(temp, 0, buffer, offset, toRead);
+                SystemBuffer.BlockCopy(temp, 0, buffer, offset, toRead);
             }
             return toRead;
         }
@@ -179,7 +181,7 @@ namespace VlessVPN
         private static byte[] SubArray(byte[] data, int offset, int length)
         {
             byte[] result = new byte[length];
-            Buffer.BlockCopy(data, offset, result, 0, length);
+            SystemBuffer.BlockCopy(data, offset, result, 0, length);
             return result;
         }
 
