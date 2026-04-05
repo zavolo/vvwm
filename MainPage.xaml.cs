@@ -1,8 +1,5 @@
 using System;
 using System.Threading.Tasks;
-using Windows.ApplicationModel.Core;
-using Windows.Networking;
-using Windows.Networking.Vpn;
 using Windows.Storage;
 using Windows.Storage.Pickers;
 using Windows.UI.Core;
@@ -14,15 +11,13 @@ namespace VlessVPN
 {
     public sealed partial class MainPage : Page
     {
-        private VpnManagementAgent _vpnAgent;
-        private VpnPlugInProfile _vpnProfile;
+        private SocksServer _socks;
         private bool _connected;
-        private const string ProfileName = "VlessVPN";
+        private const int SocksPort = 1083;
 
         public MainPage()
         {
             this.InitializeComponent();
-            _vpnAgent = new VpnManagementAgent();
             _connected = false;
 
             string savedUri = VlessConfig.LoadUri();
@@ -72,15 +67,7 @@ namespace VlessVPN
                             return;
                         }
                     }
-                    if (content.StartsWith("vless://"))
-                    {
-                        UriBox.Text = content;
-                        AppendLog($"Loaded from {file.Name}");
-                    }
-                    else
-                    {
-                        AppendLog($"No vless:// URI found in {file.Name}");
-                    }
+                    AppendLog($"No vless:// URI found in {file.Name}");
                 }
             }
             catch (Exception ex)
@@ -93,15 +80,15 @@ namespace VlessVPN
         {
             if (_connected)
             {
-                await DisconnectVpn();
+                await DisconnectProxy();
             }
             else
             {
-                await ConnectVpn();
+                await ConnectProxy();
             }
         }
 
-        private async Task ConnectVpn()
+        private async Task ConnectProxy()
         {
             string uri = UriBox.Text.Trim();
             if (string.IsNullOrEmpty(uri) || !uri.StartsWith("vless://"))
@@ -121,42 +108,19 @@ namespace VlessVPN
                 AppendLog($"Connecting to {config.Address}:{config.Port}...");
                 AppendLog($"Security: {config.Security}, Type: {config.Type}");
 
-                await RemoveExistingProfile();
-
-                _vpnProfile = new VpnPlugInProfile
+                _socks = new SocksServer();
+                _socks.Log += (msg) =>
                 {
-                    ProfileName = ProfileName,
-                    RequireVpnClientAppUI = true,
-                    AlwaysOn = false
+                    var _ = Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => AppendLog(msg));
                 };
-                _vpnProfile.VpnPluginPackageFamilyName = Windows.ApplicationModel.Package.Current.Id.FamilyName;
-                _vpnProfile.ServerUris.Add(new Uri($"https://{config.Address}:{config.Port}"));
 
-                var addResult = await _vpnAgent.AddProfileFromObjectAsync(_vpnProfile);
-                AppendLog($"Profile add: {addResult}");
+                await _socks.StartAsync(config, SocksPort);
 
-                if (addResult != VpnManagementErrorStatus.Ok)
-                {
-                    SetStatus("Profile error", "#FFFF0000");
-                    ConnectBtn.IsEnabled = true;
-                    return;
-                }
-
-                var connectResult = await _vpnAgent.ConnectProfileAsync(_vpnProfile);
-                AppendLog($"Connect result: {connectResult}");
-
-                if (connectResult == VpnManagementErrorStatus.Ok)
-                {
-                    _connected = true;
-                    SetStatus("Connected", "#FF4CAF50");
-                    ConnectBtn.Content = "DISCONNECT";
-                    ConnectBtn.Background = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 244, 67, 54));
-                }
-                else
-                {
-                    SetStatus("Connection failed", "#FFFF0000");
-                    AppendLog($"Error: {connectResult}");
-                }
+                _connected = true;
+                SetStatus($"SOCKS5 on 127.0.0.1:{SocksPort}", "#FF4CAF50");
+                ConnectBtn.Content = "DISCONNECT";
+                ConnectBtn.Background = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 244, 67, 54));
+                AppendLog($"Proxy ready. Set SOCKS5 proxy to 127.0.0.1:{SocksPort}");
             }
             catch (Exception ex)
             {
@@ -169,19 +133,13 @@ namespace VlessVPN
             }
         }
 
-        private async Task DisconnectVpn()
+        private async Task DisconnectProxy()
         {
             try
             {
                 ConnectBtn.IsEnabled = false;
-                SetStatus("Disconnecting...", "#FFFFA500");
-
-                if (_vpnProfile != null)
-                {
-                    var result = await _vpnAgent.DisconnectProfileAsync(_vpnProfile);
-                    AppendLog($"Disconnect: {result}");
-                    await _vpnAgent.DeleteProfileAsync(_vpnProfile);
-                }
+                _socks?.Stop();
+                _socks = null;
 
                 _connected = false;
                 SetStatus("Disconnected", "#FF888888");
@@ -195,18 +153,6 @@ namespace VlessVPN
             finally
             {
                 ConnectBtn.IsEnabled = true;
-            }
-        }
-
-        private async Task RemoveExistingProfile()
-        {
-            var profiles = await _vpnAgent.GetProfilesAsync();
-            foreach (var p in profiles)
-            {
-                if (p.ProfileName == ProfileName)
-                {
-                    await _vpnAgent.DeleteProfileAsync(p);
-                }
             }
         }
 

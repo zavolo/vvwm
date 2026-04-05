@@ -124,7 +124,7 @@
     </Compile>
     <Compile Include="VlessConfig.cs" />
     <Compile Include="VlessConnection.cs" />
-    <Compile Include="VpnPlugin.cs" />
+    <Compile Include="SocksServer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
