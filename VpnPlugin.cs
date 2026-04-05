@@ -12,7 +12,6 @@ namespace VlessVPN
     public class VpnPlugin : IVpnPlugIn
     {
         private VlessConfig _config;
-        private VlessConnection _vlessConn;
         private CancellationTokenSource _cts;
         public event Action<string> Log;
 
@@ -92,7 +91,6 @@ namespace VlessVPN
             try
             {
                 _cts?.Cancel();
-                _vlessConn?.Dispose();
                 channel.Stop();
                 Log?.Invoke("Disconnected");
             }
