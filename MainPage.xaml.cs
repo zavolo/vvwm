@@ -12,8 +12,10 @@ namespace VlessVPN
     public sealed partial class MainPage : Page
     {
         private SocksServer _socks;
+        private HttpProxyServer _httpProxy;
         private bool _connected;
         private const int SocksPort = 1083;
+        private const int HttpPort = 8080;
 
         public MainPage()
         {
@@ -116,11 +118,19 @@ namespace VlessVPN
 
                 await _socks.StartAsync(config, SocksPort);
 
+                _httpProxy = new HttpProxyServer();
+                _httpProxy.Log += (msg) =>
+                {
+                    var _ = Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => AppendLog(msg));
+                };
+                await _httpProxy.StartAsync(config, HttpPort);
+
                 _connected = true;
-                SetStatus($"SOCKS5 on 127.0.0.1:{SocksPort}", "#FF4CAF50");
+                SetStatus($"HTTP proxy 127.0.0.1:{HttpPort}", "#FF4CAF50");
                 ConnectBtn.Content = "DISCONNECT";
                 ConnectBtn.Background = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 244, 67, 54));
-                AppendLog($"Proxy ready. Set SOCKS5 proxy to 127.0.0.1:{SocksPort}");
+                AppendLog($"HTTP proxy: 127.0.0.1:{HttpPort}");
+                AppendLog($"SOCKS5 proxy: 127.0.0.1:{SocksPort}");
             }
             catch (Exception ex)
             {
@@ -140,6 +150,8 @@ namespace VlessVPN
                 ConnectBtn.IsEnabled = false;
                 _socks?.Stop();
                 _socks = null;
+                _httpProxy?.Stop();
+                _httpProxy = null;
 
                 _connected = false;
                 SetStatus("Disconnected", "#FF888888");
