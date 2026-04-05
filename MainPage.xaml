@@ -28,6 +28,7 @@
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
             <TextBox x:Name="UriBox"
                      Grid.Column="0"
@@ -44,6 +45,14 @@
                     Margin="8,0,0,0"
                     VerticalAlignment="Stretch"
                     Click="PasteBtn_Click"/>
+            <Button x:Name="FileBtn"
+                    Grid.Column="2"
+                    Content="&#xE8E5;"
+                    FontFamily="Segoe MDL2 Assets"
+                    FontSize="18"
+                    Margin="8,0,0,0"
+                    VerticalAlignment="Stretch"
+                    Click="FileBtn_Click"/>
         </Grid>
 
         <StackPanel Grid.Row="2" Margin="0,0,0,16">

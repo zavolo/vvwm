@@ -3,6 +3,8 @@ using System.Threading.Tasks;
 using Windows.ApplicationModel.Core;
 using Windows.Networking;
 using Windows.Networking.Vpn;
+using Windows.Storage;
+using Windows.Storage.Pickers;
 using Windows.UI.Core;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
@@ -41,6 +43,49 @@ namespace VlessVPN
                 {
                     UriBox.Text = text.Trim();
                 }
+            }
+        }
+
+        private async void FileBtn_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var picker = new FileOpenPicker();
+                picker.SuggestedStartLocation = PickerLocationId.DocumentsLibrary;
+                picker.FileTypeFilter.Add(".txt");
+                picker.FileTypeFilter.Add(".conf");
+                picker.FileTypeFilter.Add(".vless");
+                picker.FileTypeFilter.Add("*");
+
+                StorageFile file = await picker.PickSingleFileAsync();
+                if (file != null)
+                {
+                    string content = await FileIO.ReadTextAsync(file);
+                    content = content.Trim();
+                    string[] lines = content.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+                    foreach (string line in lines)
+                    {
+                        if (line.StartsWith("vless://"))
+                        {
+                            UriBox.Text = line.Trim();
+                            AppendLog($"Loaded from {file.Name}");
+                            return;
+                        }
+                    }
+                    if (content.StartsWith("vless://"))
+                    {
+                        UriBox.Text = content;
+                        AppendLog($"Loaded from {file.Name}");
+                    }
+                    else
+                    {
+                        AppendLog($"No vless:// URI found in {file.Name}");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                AppendLog($"File error: {ex.Message}");
             }
         }
 
