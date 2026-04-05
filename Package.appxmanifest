@@ -9,7 +9,7 @@
   <Identity
     Name="db04af91-a7b5-4ffa-81b0-7b37b65b7635"
     Publisher="CN=mazahaka"
-    Version="1.0.0.0" />
+    Version="1.0.4.0" />
 
   <mp:PhoneIdentity PhoneProductId="db04af91-a7b5-4ffa-81b0-7b37b65b7635" PhonePublisherId="00000000-0000-0000-0000-000000000000"/>
 
